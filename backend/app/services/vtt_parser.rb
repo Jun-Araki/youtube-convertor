@@ -72,6 +72,7 @@ class VttParser
   def self.sanitize_text(text)
     cleaned = text.gsub(/<[^>]+>/, "")
     cleaned = CGI.unescapeHTML(cleaned)
+    cleaned = cleaned.gsub("&nbsp;", "")
     cleaned = cleaned.tr("\u00A0", " ")
     cleaned.gsub(/\s+/, " ").strip
   end

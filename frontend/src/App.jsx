@@ -125,23 +125,60 @@ function App() {
     playerRef.current.seekTo(cue.start, true)
   }
 
+  const handleSeekToWord = (cue, wordIndex, wordCount, event) => {
+    event?.preventDefault()
+    event?.stopPropagation()
+    if (!playerRef.current?.seekTo || wordCount <= 0) return
+    const duration = Math.max(0.01, cue.end - cue.start)
+    const progress = Math.min(1, Math.max(0, wordIndex / wordCount))
+    const backtrack = 0.1
+    const seekTime = Math.max(0, cue.start + duration * progress - backtrack)
+    playerRef.current.seekTo(seekTime, true)
+  }
+
   const renderCaptionText = (cue, isActive) => {
-    const text = cue.text || ''
-    if (!isActive) return text
+    const text = (cue.text || '').replace(/&nbsp;/g, ' ').replace(/\u00a0/g, ' ')
+    const tokens = text.split(/(\s+)/)
+    const wordCount = tokens.filter((token) => token.trim().length > 0).length || 1
+    if (!isActive) {
+      let wordIndex = -1
+      return tokens.map((token, index) => {
+        const isWord = token.trim().length > 0
+        if (isWord) wordIndex += 1
+        const tokenWordIndex = wordIndex
+        if (!isWord) return token
+        return (
+          <span
+            key={`word-${index}`}
+            className="caption-word"
+            onClick={(event) =>
+              handleSeekToWord(cue, tokenWordIndex, wordCount, event)
+            }
+            role="button"
+            tabIndex={-1}
+          >
+            {token}
+          </span>
+        )
+      })
+    }
 
     const duration = Math.max(0.01, cue.end - cue.start)
     const progress = Math.min(1, Math.max(0, (currentTime - cue.start) / duration))
-    const tokens = text.split(/(\s+)/)
-    const wordCount = tokens.filter((token) => token.trim().length > 0).length || 1
-    const highlightWords = Math.min(wordCount, Math.floor(wordCount * progress))
+    const currentWordIndex = Math.min(wordCount - 1, Math.floor(wordCount * progress))
 
-    let seenWords = 0
+    let wordIndex = -1
     const leading = []
     const trailing = []
+    let currentToken = null
 
-    tokens.forEach((token) => {
-      if (token.trim().length === 0) {
-        if (seenWords < highlightWords) {
+    tokens.forEach((token, index) => {
+      const isWord = token.trim().length > 0
+      if (isWord) wordIndex += 1
+      const tokenWordIndex = wordIndex
+
+      if (!isWord) {
+        if (wordIndex < currentWordIndex) {
           leading.push(token)
         } else {
           trailing.push(token)
@@ -149,18 +186,34 @@ function App() {
         return
       }
 
-      if (seenWords < highlightWords) {
-        leading.push(token)
+      const wordElement = (
+        <span
+          key={`word-${index}`}
+          className="caption-word"
+          onClick={(event) =>
+            handleSeekToWord(cue, tokenWordIndex, wordCount, event)
+          }
+          role="button"
+          tabIndex={-1}
+        >
+          {token}
+        </span>
+      )
+
+      if (tokenWordIndex < currentWordIndex) {
+        leading.push(wordElement)
+      } else if (tokenWordIndex === currentWordIndex) {
+        currentToken = wordElement
       } else {
-        trailing.push(token)
+        trailing.push(wordElement)
       }
-      seenWords += 1
     })
 
     return (
       <span className="caption-text">
-        <span className="caption-progress">{leading.join('')}</span>
-        <span className="caption-rest">{trailing.join('')}</span>
+        <span className="caption-rest">{leading}</span>
+        <span className="caption-progress">{currentToken}</span>
+        <span className="caption-rest">{trailing}</span>
       </span>
     )
   }

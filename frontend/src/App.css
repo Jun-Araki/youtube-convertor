@@ -1,5 +1,5 @@
 .app {
-  max-width: 1100px;
+  max-width: 1240px;
   margin: 0 auto;
   padding: 32px 20px 48px;
   color: #111827;
@@ -55,7 +55,7 @@
 .content {
   margin-top: 28px;
   display: grid;
-  grid-template-columns: 1.2fr 1fr;
+  grid-template-columns: 1.05fr 1.35fr;
   gap: 24px;
 }
 
@@ -107,7 +107,7 @@
   flex-direction: column;
   gap: 8px;
   overflow-y: auto;
-  max-height: 520px;
+  max-height: 660px;
 }
 
 .caption {
@@ -134,6 +134,14 @@
   white-space: pre-wrap;
 }
 
+.caption-word {
+  cursor: pointer;
+}
+
+.caption-word:hover {
+  text-decoration: underline;
+}
+
 .caption-progress {
   color: var(--caption-glow);
   text-shadow: 0 0 6px rgba(250, 204, 21, 0.7),
@@ -156,6 +164,6 @@
   }
 
   .captions-list {
-    max-height: 320px;
+    max-height: 420px;
   }
 }

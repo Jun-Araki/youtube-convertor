@@ -57,4 +57,18 @@ RSpec.describe VttParser do
     expect(cues.length).to eq(1)
     expect(cues[0][:text]).to eq("Hello world & friends")
   end
+
+  it "normalizes double-escaped nbsp entities" do
+    vtt = <<~VTT
+      WEBVTT
+
+      00:00:01.000 --> 00:00:02.000
+      Hello&amp;nbsp;world
+    VTT
+
+    cues = described_class.parse(vtt)
+
+    expect(cues.length).to eq(1)
+    expect(cues[0][:text]).to eq("Hello world")
+  end
 end
