@@ -3,6 +3,12 @@ import './App.css'
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:3000'
 
+function formatTime(seconds) {
+  const m = Math.floor(seconds / 60)
+  const s = Math.floor(seconds % 60)
+  return `${m}:${String(s).padStart(2, '0')}`
+}
+
 function App() {
   const [url, setUrl] = useState('')
   const [videoId, setVideoId] = useState('')
@@ -56,12 +62,16 @@ function App() {
     const intervalId = window.setInterval(() => {
       if (!playerRef.current?.getCurrentTime) return
       const currentTime = playerRef.current.getCurrentTime()
-      const index = captions.findIndex(
-        (cue) => currentTime >= cue.start && currentTime < cue.end
-      )
+      let index = -1
+      for (let i = captions.length - 1; i >= 0; i--) {
+        if (currentTime >= captions[i].start && currentTime < captions[i].end) {
+          index = i
+          break
+        }
+      }
       setCurrentTime(currentTime)
       setActiveIndex(index)
-    }, 250)
+    }, 50)
 
     return () => window.clearInterval(intervalId)
   }, [captions, videoId])
@@ -125,84 +135,66 @@ function App() {
     playerRef.current.seekTo(cue.start, true)
   }
 
-  const handleSeekToWord = (cue, wordIndex, wordCount, event) => {
+  const handleSeekToWord = (cue, wordIndex, event) => {
     event?.preventDefault()
     event?.stopPropagation()
-    if (!playerRef.current?.seekTo || wordCount <= 0) return
-    const duration = Math.max(0.01, cue.end - cue.start)
-    const progress = Math.min(1, Math.max(0, wordIndex / wordCount))
-    const backtrack = 0.1
-    const seekTime = Math.max(0, cue.start + duration * progress - backtrack)
+    if (!playerRef.current?.seekTo) return
+    const words = cue.words || []
+    const word = words[wordIndex]
+    const seekTime = word ? Math.max(0, word.start - 0.05) : cue.start
     playerRef.current.seekTo(seekTime, true)
   }
 
   const renderCaptionText = (cue, isActive) => {
-    const text = (cue.text || '').replace(/&nbsp;/g, ' ').replace(/\u00a0/g, ' ')
-    const tokens = text.split(/(\s+)/)
-    const wordCount = tokens.filter((token) => token.trim().length > 0).length || 1
+    const words = cue.words || []
+
     if (!isActive) {
-      let wordIndex = -1
-      return tokens.map((token, index) => {
-        const isWord = token.trim().length > 0
-        if (isWord) wordIndex += 1
-        const tokenWordIndex = wordIndex
-        if (!isWord) return token
-        return (
+      return words.map((word, index) => (
+        <span key={`word-${index}`}>
+          {index > 0 && ' '}
           <span
-            key={`word-${index}`}
             className="caption-word"
-            onClick={(event) =>
-              handleSeekToWord(cue, tokenWordIndex, wordCount, event)
-            }
+            onClick={(event) => handleSeekToWord(cue, index, event)}
             role="button"
             tabIndex={-1}
           >
-            {token}
+            {word.text}
           </span>
-        )
-      })
+        </span>
+      ))
     }
 
-    const duration = Math.max(0.01, cue.end - cue.start)
-    const progress = Math.min(1, Math.max(0, (currentTime - cue.start) / duration))
-    const currentWordIndex = Math.min(wordCount - 1, Math.floor(wordCount * progress))
+    // Find the current word based on word-level timestamps
+    let currentWordIndex = 0
+    for (let i = words.length - 1; i >= 0; i--) {
+      if (currentTime >= words[i].start) {
+        currentWordIndex = i
+        break
+      }
+    }
 
-    let wordIndex = -1
     const leading = []
     const trailing = []
     let currentToken = null
 
-    tokens.forEach((token, index) => {
-      const isWord = token.trim().length > 0
-      if (isWord) wordIndex += 1
-      const tokenWordIndex = wordIndex
-
-      if (!isWord) {
-        if (wordIndex < currentWordIndex) {
-          leading.push(token)
-        } else {
-          trailing.push(token)
-        }
-        return
-      }
-
+    words.forEach((word, index) => {
       const wordElement = (
-        <span
-          key={`word-${index}`}
-          className="caption-word"
-          onClick={(event) =>
-            handleSeekToWord(cue, tokenWordIndex, wordCount, event)
-          }
-          role="button"
-          tabIndex={-1}
-        >
-          {token}
+        <span key={`word-${index}`}>
+          {index > 0 && ' '}
+          <span
+            className="caption-word"
+            onClick={(event) => handleSeekToWord(cue, index, event)}
+            role="button"
+            tabIndex={-1}
+          >
+            {word.text}
+          </span>
         </span>
       )
 
-      if (tokenWordIndex < currentWordIndex) {
+      if (index < currentWordIndex) {
         leading.push(wordElement)
-      } else if (tokenWordIndex === currentWordIndex) {
+      } else if (index === currentWordIndex) {
         currentToken = wordElement
       } else {
         trailing.push(wordElement)
@@ -218,24 +210,46 @@ function App() {
     )
   }
 
+  const connectionStatus = loading ? 'loading' : videoId ? '' : 'offline'
+
   return (
     <div className="app">
       <header className="header">
-        <h1>Listen With YouTube</h1>
+        <h1>
+          <span className="prompt">{'>'}</span>
+          listen_with_youtube
+          <span className="cursor" />
+        </h1>
         <p>Paste a YouTube URL to load English subtitles instantly.</p>
       </header>
+
+      <div className="status-bar">
+        <span className={`status-dot ${connectionStatus}`} />
+        <span>
+          {loading
+            ? 'fetching transcript...'
+            : videoId
+              ? `streaming: ${videoId}`
+              : 'ready — waiting for input'}
+        </span>
+        {captions.length > 0 && (
+          <span style={{ marginLeft: 'auto' }}>
+            {captions.length} cues loaded
+          </span>
+        )}
+      </div>
 
       <form className="url-form" onSubmit={handleSubmit}>
         <input
           type="url"
-          placeholder="Paste a YouTube URL here"
+          placeholder="$ paste youtube url here..."
           value={url}
           onChange={(event) => setUrl(event.target.value)}
           onPaste={handlePaste}
           required
         />
         <button type="submit" disabled={loading}>
-          {loading ? 'Loading…' : 'Load'}
+          {loading ? 'Loading...' : 'Run'}
         </button>
       </form>
 
@@ -243,14 +257,32 @@ function App() {
 
       <div className="content">
         <div className="player-panel">
-          <div className="player" ref={playerContainerRef} />
-          {!videoId && <div className="placeholder">Paste a URL to start.</div>}
+          <div className="player-panel-header">
+            <div className="window-dots">
+              <span />
+              <span />
+              <span />
+            </div>
+            <span>player.tsx</span>
+          </div>
+          <div className="player-body">
+            <div className="player" ref={playerContainerRef} />
+            {!videoId && (
+              <div className="placeholder">
+                <span className="placeholder-icon">&#9654;</span>
+                <span>Paste a URL to start.</span>
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="captions-panel">
           <div className="captions-header">
-            <span>Captions</span>
-            <span>{captions.length} lines</span>
+            <span className="label">
+              <span className="icon">#</span>
+              <span>captions</span>
+            </span>
+            <span className="count">{captions.length} lines</span>
           </div>
           <div className="captions-list" ref={captionsListRef}>
             {captions.map((cue, index) => (
@@ -261,15 +293,25 @@ function App() {
                 onClick={() => handleSeek(cue)}
                 data-caption-index={index}
               >
+                <span className="caption-time">{formatTime(cue.start)}</span>
                 {renderCaptionText(cue, index === activeIndex)}
               </button>
             ))}
             {!loading && captions.length === 0 && (
-              <div className="caption-empty">No captions loaded yet.</div>
+              <div className="caption-empty">
+                {'// no captions loaded yet'}
+              </div>
             )}
           </div>
         </div>
       </div>
+
+      <footer className="footer">
+        <span>listen_with_youtube v1.0</span>
+        <span>
+          <kbd className="kbd">Ctrl</kbd> + <kbd className="kbd">V</kbd> to quick-load
+        </span>
+      </footer>
     </div>
   )
 }

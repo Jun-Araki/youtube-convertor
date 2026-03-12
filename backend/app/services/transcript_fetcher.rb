@@ -50,26 +50,48 @@ class TranscriptFetcher
 
   def self.fetch_captions(url)
     Dir.mktmpdir("yt_subs") do |dir|
-      cmd = [
+      # Try fetching auto-generated subtitle for word-level precision
+      auto_cmd = [
         "yt-dlp",
         "--skip-download",
-        "--write-sub",
         "--write-auto-sub",
         "--no-playlist",
         "--socket-timeout", "10",
         "--retries", "2",
         "--sub-lang", "en",
-        "--sub-format", "vtt",
+        "--sub-format", "json3",
         "--output", File.join(dir, "%(id)s.%(ext)s"),
         url
       ]
 
-      stdout, stderr, status = Timeout.timeout(25) { Open3.capture3(*cmd) }
-      unless status.success?
-        message = stderr.strip
-        message = stdout.strip if message.empty?
-        raise FetchError, "yt-dlp failed: #{message}"
+      Timeout.timeout(25) { Open3.capture3(*auto_cmd) }
+
+      json3_path = Dir.glob(File.join(dir, "*.json3")).first
+
+      # If no auto-generated sub, fallback to manual sub
+      unless json3_path
+        manual_cmd = [
+          "yt-dlp",
+          "--skip-download",
+          "--write-sub",
+          "--no-playlist",
+          "--socket-timeout", "10",
+          "--retries", "2",
+          "--sub-lang", "en",
+          "--sub-format", "json3/vtt/best",
+          "--output", File.join(dir, "%(id)s.%(ext)s"),
+          url
+        ]
+        stdout, stderr, status = Timeout.timeout(25) { Open3.capture3(*manual_cmd) }
+        unless status.success?
+          message = stderr.strip
+          message = stdout.strip if message.empty?
+          raise FetchError, "yt-dlp failed: #{message}"
+        end
       end
+
+      json3_path = Dir.glob(File.join(dir, "*.json3")).first
+      return Json3Parser.parse(File.read(json3_path)) if json3_path
 
       vtt_path = Dir.glob(File.join(dir, "*.vtt")).first
       raise TranscriptNotFound, "No English subtitles found" unless vtt_path

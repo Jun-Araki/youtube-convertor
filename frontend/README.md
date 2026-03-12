@@ -1,16 +1,22 @@
-# React + Vite
+# YouTube Convertor Frontend (React)
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A responsive React application for interacting with YouTube transcripts.
 
-Currently, two official plugins are available:
+## Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- **Interactive Transcript**: Side-bar captions that follow video playback.
+- **Pinpoint Navigation**: Clicking any word in the transcript seeks the YouTube player to that exact millisecond.
+- **Dynamic Highlighting**: CSS-driven highlighting of the current word being spoken.
+- **Responsive Layout**: Designed to provide a comfortable reading and viewing experience side-by-side.
 
-## React Compiler
+## Tech Details
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- **Framework**: React 18+ with Vite.
+- **Video Player**: `react-player` for YouTube integration.
+- **Styling**: Vanilla CSS for maximum control over layouts and animations.
 
-## Expanding the ESLint configuration
+## Development
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+1. **Install Nodes**: `npm install`
+2. **Environment**: Ensure the Rails backend is running on `http://localhost:3000`.
+3. **Run Dev Server**: `npm run dev` (Runs on port 5173).

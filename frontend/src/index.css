@@ -1,11 +1,51 @@
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap');
+
 :root {
-  font-family: 'Segoe UI', 'Hiragino Sans', 'Noto Sans JP', sans-serif;
-  line-height: 1.5;
+  /* Base palette */
+  --bg-primary: #0d1117;
+  --bg-secondary: #161b22;
+  --bg-tertiary: #1c2128;
+  --bg-card: #1c2128;
+  --bg-hover: #262c36;
+  --bg-active: #2d333b;
+
+  /* Borders */
+  --border-default: #30363d;
+  --border-muted: #21262d;
+  --border-accent: #388bfd40;
+
+  /* Text */
+  --text-primary: #e6edf3;
+  --text-secondary: #8b949e;
+  --text-muted: #484f58;
+  --text-link: #58a6ff;
+
+  /* Accent colors (syntax-highlighting inspired) */
+  --accent-green: #3fb950;
+  --accent-green-soft: rgba(63, 185, 80, 0.15);
+  --accent-blue: #58a6ff;
+  --accent-blue-soft: rgba(88, 166, 255, 0.15);
+  --accent-purple: #bc8cff;
+  --accent-purple-soft: rgba(188, 140, 255, 0.15);
+  --accent-yellow: #d29922;
+  --accent-yellow-soft: rgba(210, 153, 34, 0.15);
+  --accent-orange: #f0883e;
+  --accent-red: #f85149;
+  --accent-red-soft: rgba(248, 81, 73, 0.15);
+  --accent-cyan: #39d353;
+
+  /* Glow */
+  --glow-green: 0 0 8px rgba(63, 185, 80, 0.4);
+  --glow-blue: 0 0 8px rgba(88, 166, 255, 0.3);
+
+  font-family: 'Inter', 'Segoe UI', 'Hiragino Sans', 'Noto Sans JP', sans-serif;
+  line-height: 1.6;
   font-weight: 400;
-  color: #111827;
-  background-color: #f8fafc;
+  color: var(--text-primary);
+  background-color: var(--bg-primary);
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 * {
@@ -20,4 +60,27 @@ body {
 button,
 input {
   font-family: inherit;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-default);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+}
+
+::selection {
+  background: var(--accent-blue-soft);
+  color: var(--text-primary);
 }
